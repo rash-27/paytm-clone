@@ -60,5 +60,13 @@ router.put('/update',authMiddleware,async(req,res)=>{
 
 })
 
+router.get('/bulk',authMiddleware,async(req,res)=>{
+    const filter = req.query.filter || "";
+    const userId = req.user.userId;
+    const users = await User.find({name:{$regex:filter,$options:'i'}}).select('_id name email');
+    res.json(users.filter(user=>user._id!=req.user.userId));
+
+})
+
 
 module.exports = router;
