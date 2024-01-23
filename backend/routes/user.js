@@ -2,10 +2,13 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const { User ,userValidation ,signinValidation ,updateValidation} = require("../models/user");
+const {Bank} = require('../models/banks');
 const bcrypt = require("bcrypt");
 const {authMiddleware} = require('../middlewares/auth');
 const config = require('config');
 const _ = require('lodash');
+
+
 router.post("/signup", async(req, res) => {
   const user = req.body;
   const response = userValidation(user);
@@ -19,6 +22,7 @@ router.post("/signup", async(req, res) => {
   const salt = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salt);
   const newUser = await User.create(user);
+  await Bank.create({userId:newUser._id,bankName:'My Bank',balance:1+Math.floor(Math.random()*1000)});
   const token = jwt.sign({userId:newUser._id},config.get('JwtSecret'));
     res.header('x-auth-token','Bearer '+token).send(token);
   }catch(err){
@@ -64,7 +68,7 @@ router.get('/bulk',authMiddleware,async(req,res)=>{
     const filter = req.query.filter || "";
     const userId = req.user.userId;
     const users = await User.find({name:{$regex:filter,$options:'i'}}).select('_id name email');
-    res.json(users.filter(user=>user._id!=req.user.userId));
+    res.json(users.filter(user=>user._id!=userId));
 
 })
 
