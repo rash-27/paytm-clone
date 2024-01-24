@@ -17,4 +17,4 @@ const bankSchema = new mongoose.Schema({
 
 });
 
-module.exports = mongoose.model('Bank',bankSchema);
+module.exports.Bank = mongoose.model('Bank',bankSchema);

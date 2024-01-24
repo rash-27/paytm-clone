@@ -43,15 +43,12 @@ router.post("/transfer", authMiddleware, async (req, res) => {
     return res.status(400).send("Insufficient balance");
   }
 
-  user.balance -= amount;
-  otherUser.balance += amount;
-  await user.save().session(session);
-  await otherUser.save().session(session);
-
+  await Bank.findByIdAndUpdate(user._id, {$inc:{balance:-amount}}).session(session);
+  await Bank.findByIdAndUpdate(otherUser._id, {$inc:{balance:amount}}).session(session);
   //Transaction is ended
   await session.commitTransaction();
   res.json({
-    balance: user.balance,
+    balance: user.balance-amount,
     message: "Transaction successful",
   });
 });

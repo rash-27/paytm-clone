@@ -7,23 +7,31 @@ const bcrypt = require("bcrypt");
 const {authMiddleware} = require('../middlewares/auth');
 const config = require('config');
 const _ = require('lodash');
-
+const mongoose = require('mongoose');
 
 router.post("/signup", async(req, res) => {
-  const user = req.body;
-  const response = userValidation(user);
+  const session = await mongoose.startSession();
+
+  session.startTransaction();
+  const {name ,password ,email}= req.body;
+  const response = userValidation({name ,password ,email});
   if(!response.success){
+    await session.abortTransaction();
     return res.status(400).send(response.error);
   }
   try{
-  const checkuser = await User.findOne({email:user.email});
-  if(checkuser)return res.status(400).send('User already exist');
+    
+  const checkuser = await User.findOne({email:user.email}).session(session);
+  if(checkuser){
+    session.abortTransaction();
+    return res.status(400).send('User already exist');}
 
   const salt = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salt);
-  const newUser = await User.create(user);
-  await Bank.create({userId:newUser._id,bankName:'My Bank',balance:1+Math.floor(Math.random()*1000)});
+  const newUser = (await User.create(user));
+  (await Bank.create({userId:newUser._id,bankName:'My Bank',balance:1+Math.floor(Math.random()*1000)}));
   const token = jwt.sign({userId:newUser._id},config.get('JwtSecret'));
+  await session.commitTransaction();
     res.header('x-auth-token','Bearer '+token).send(token);
   }catch(err){
     console.log(err);
@@ -31,8 +39,8 @@ router.post("/signup", async(req, res) => {
 });
 
 router.post("/signin", async(req, res) => {
-  const user = req.body;
-  const response = signinValidation(user);
+  const {email,password}= req.body;
+  const response = signinValidation({email,password});
 
   if(!response.success){
     return res.status(400).send(response.error);
