@@ -20,7 +20,7 @@ router.post("/signup", async(req, res) => {
     return res.status(400).send(response.error);
   }
   try{
-    
+  const user = req.body;
   const checkuser = await User.findOne({email:user.email}).session(session);
   if(checkuser){
     session.abortTransaction();
@@ -30,9 +30,10 @@ router.post("/signup", async(req, res) => {
   user.password = await bcrypt.hash(user.password, salt);
   const newUser = (await User.create(user));
   (await Bank.create({userId:newUser._id,bankName:'My Bank',balance:1+Math.floor(Math.random()*1000)}));
-  const token = jwt.sign({userId:newUser._id},config.get('JwtSecret'));
+  let token = jwt.sign({userId:newUser._id},config.get('JwtSecret'));
   await session.commitTransaction();
-    res.header('x-auth-token','Bearer '+token).send(token);
+  token = 'Bearer '+token;
+    res.header('x-auth-token',token).json({token:token});
   }catch(err){
     console.log(err);
   }
@@ -45,15 +46,21 @@ router.post("/signin", async(req, res) => {
   if(!response.success){
     return res.status(400).send(response.error);
   }
+  try
+ { 
+  const user = req.body;
   const checkuser = await User.findOne({email:user.email});
   if(!checkuser)return res.status(400).send('User doesnt exist');
 
     const validPassword = await bcrypt.compare(user.password,checkuser.password);
     if(!validPassword)return res.status(400).send('Invalid password');
 
-  const token = jwt.sign({userId:checkuser._id},config.get('JwtSecret'));
-    res.header('x-auth-token','Bearer '+token).send(token);
-
+  let token = jwt.sign({userId:checkuser._id},config.get('JwtSecret'));
+  token = 'Bearer '+token;
+    res.header('x-auth-token',token).json({token:token});
+}catch(err){
+  console.log(err);
+}
 });
 
 
@@ -73,10 +80,14 @@ router.put('/update',authMiddleware,async(req,res)=>{
 })
 
 router.get('/bulk',authMiddleware,async(req,res)=>{
+    // console.log("filter is "+req.query.filter)
     const filter = req.query.filter || "";
     const userId = req.user.userId;
     const users = await User.find({name:{$regex:filter,$options:'i'}}).select('_id name email');
-    res.json(users.filter(user=>user._id!=userId));
+    const finalusers = users.filter(user=>user._id!=userId);
+
+    if(filter.length==0)return res.json({users:[]});//if filter is empty return empty array
+    return res.json({users : finalusers});
 
 })
 

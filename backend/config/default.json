@@ -1,5 +1,5 @@
 {
-    "JwtSecret":"",
-    "Port":"",
-    "DataBase":""
+    "JwtSecret":"LaLaLa",
+    "Port":3000,
+    "DataBase":"mongodb+srv://rashmik2705:iWagaaAaW6Q9a9ty@cluster0.acr58ps.mongodb.net/test"
 }

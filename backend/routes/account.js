@@ -9,6 +9,7 @@ router.get("/balance", authMiddleware, async (req, res) => {
   const userId = req.user.userId;
   const userDetails = await Bank.findOne({ userId });
   if (!userDetails) return res.status(400).send("User doesnt exist");
+  // console.log(userDetails.balance);
   res.json({
     balance: userDetails.balance,
   });
@@ -20,16 +21,18 @@ router.post("/transfer", authMiddleware, async (req, res) => {
 
   //Transaction is started
   session.startTransaction();
-
   const userId = req.user.userId;
-  const { amount, to } = req.body;
+  const { amount, to } = req.body;//need to send the userID
   if (!amount || !to) return res.status(400).send("Invalid request");
-  const user = await Bank.findOne({ userId }).session(session);
-  const otherUser = await Bank.findById(to).session(session);
+  console.log(1);
+  const user = await Bank.findOne({ userId : userId }).session(session);
+  const otherUser = await Bank.findOne({userId:to}).session(session);
+
   if (!otherUser) {
     await session.abortTransaction();
     return res.status(400).send("User doesnt have a bank account exist");
   }
+
   if (amount < 0) {
     await session.abortTransaction();
     return res.status(400).send("Invalid amount");
@@ -38,7 +41,7 @@ router.post("/transfer", authMiddleware, async (req, res) => {
     await session.abortTransaction();
     return res.status(400).send("Invalid request");
   }
-  if (user.balance < amount) {
+  if (user?.balance < amount) {
     await session.abortTransaction();
     return res.status(400).send("Insufficient balance");
   }
@@ -49,7 +52,6 @@ router.post("/transfer", authMiddleware, async (req, res) => {
   await session.commitTransaction();
   res.json({
     balance: user.balance-amount,
-    message: "Transaction successful",
   });
 });
 
