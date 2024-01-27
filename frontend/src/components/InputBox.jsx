@@ -4,7 +4,7 @@ const InputBox = ({label,placeHolder}) => {
   return (
     <div>
       <div className='text-sm font-medium text-left py-2' >{label}</div>
-      <input type="text" placeHolder={placeHolder} className='w-full px-' />
+      <input type="text" placeholder={placeHolder} className='w-full py-1 border rounded border-slate-200' />
     </div>
   )
 }
